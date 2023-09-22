@@ -86,22 +86,27 @@ main(int argc, char* argv[])
     address.SetBase("10.1.2.0", "255.255.255.0");
     Ipv4InterfaceContainer csmaInterfaces;
     csmaInterfaces = address.Assign(csmaDevices);
-
+    // Creating two different UdpEchoServerHelpers with different port numbers
+    // This is to avoid any conflict and to ensure that the messages reach the correct process
     UdpEchoServerHelper echoServer1(9);
     UdpEchoServerHelper echoServer2(10);
 
 
     ApplicationContainer serverApps = echoServer1.Install(csmaNodes.Get(nCsma));
+    // Adding the second server to the same node
     serverApps.Add(echoServer2.Install(csmaNodes.Get(nCsma)));
 
     serverApps.Start(Seconds(1.0));
     serverApps.Stop(Seconds(10.0));
 
+    // Creating two different UdpEchoClientHelpers aimed at the different servers
+    // Client for server on port 9
     UdpEchoClientHelper echoClient1(csmaInterfaces.GetAddress(nCsma), 9);
     echoClient1.SetAttribute("MaxPackets", UintegerValue(1));
     echoClient1.SetAttribute("Interval", TimeValue(Seconds(1.0)));
     echoClient1.SetAttribute("PacketSize", UintegerValue(1024));
 
+    // Additional Client for server on port 10
     UdpEchoClientHelper echoClient2(csmaInterfaces.GetAddress(nCsma), 10);
     echoClient2.SetAttribute("MaxPackets", UintegerValue(1));
     echoClient2.SetAttribute("Interval", TimeValue(Seconds(1.0)));

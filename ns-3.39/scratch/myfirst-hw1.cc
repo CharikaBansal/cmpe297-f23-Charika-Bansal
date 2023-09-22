@@ -33,14 +33,17 @@ NS_LOG_COMPONENT_DEFINE("FirstScriptExample");
 int
 main(int argc, char* argv[])
 {
+    // Default values for DataRate and PacketSize
     std::string data_rate="5Mbps";
     std::string packet_size = "1024";
 
     CommandLine cmd(__FILE__);
+    // Command line arguments to change DataRate and PacketSize
     cmd.AddValue("DataRate", "Data rate of the Channel", data_rate);
     cmd.AddValue("PacketSize", "Packet Size of the Message", packet_size);
     cmd.Parse(argc, argv);
 
+    // Display the DataRate and PacketSize
      std::cout << "DataRate - " + data_rate  + "\n" + "PacketSize - " + packet_size + "\n"<< std::endl;
 
     Time::SetResolution(Time::NS);
@@ -70,6 +73,8 @@ main(int argc, char* argv[])
 
     ApplicationContainer serverApps = echoServer.Install(nodes.Get(1));
     serverApps.Start(Seconds(1.0));
+    // The server app is set to stop at 70 seconds, ensuring it's active long enough
+    // to respond to client hellos, even if there are delays in client transmission
     serverApps.Stop(Seconds(70.0));
 
     UdpEchoClientHelper echoClient(interfaces.GetAddress(1), 9);
@@ -79,6 +84,8 @@ main(int argc, char* argv[])
 
     ApplicationContainer clientApps = echoClient.Install(nodes.Get(0));
     clientApps.Start(Seconds(2.0));
+    // The client app is set to stop at 70 seconds, ensuring that it can wait for 
+    // server's reply even if there is a considerable delay in server response
     clientApps.Stop(Seconds(70.0));
 
     Simulator::Run();

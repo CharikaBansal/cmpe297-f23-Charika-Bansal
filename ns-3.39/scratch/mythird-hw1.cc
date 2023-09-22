@@ -166,7 +166,8 @@ main(int argc, char* argv[])
     address.Assign(apDevices);
 
     UdpEchoServerHelper echoServer(9);
-
+    
+    // Moved the echo server from a CSMA node to a mobile Wi-Fi station.
     ApplicationContainer serverApps = echoServer.Install(wifiStaNodes.Get(nWifi - 2));
     serverApps.Start(Seconds(1.0));
     serverApps.Stop(Seconds(10.0));
@@ -192,7 +193,7 @@ main(int argc, char* argv[])
         csma.EnablePcap("third", csmaDevices.Get(0), true);
     }
     
-    //Flow Monitor Setup
+    // Set up Flow Monitor for recording application throughput
     FlowMonitorHelper flowmon;
     Ptr<FlowMonitor> monitor = flowmon.InstallAll();
 
