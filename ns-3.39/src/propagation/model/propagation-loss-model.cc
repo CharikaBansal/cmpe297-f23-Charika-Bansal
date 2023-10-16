@@ -560,6 +560,109 @@ LogDistancePropagationLossModel::DoAssignStreams(int64_t stream)
     return 0;
 }
 
+
+
+// ---------------------------LogDistanceShadowingPropogationLoss---------------------------------------------- //
+
+NS_OBJECT_ENSURE_REGISTERED(LogDistanceShadowingPropagationLossModel);
+
+TypeId
+LogDistanceShadowingPropagationLossModel::GetTypeId()
+{
+    static TypeId tid =
+        TypeId("ns3::LogDistanceShadowingPropagationLossModel")
+            .SetParent<PropagationLossModel>()
+            .SetGroupName("Propagation")
+            .AddConstructor<LogDistanceShadowingPropagationLossModel>()
+            .AddAttribute("Exponent",
+                          "The exponent of the Path Loss propagation model",
+                          DoubleValue(3.0),
+                          MakeDoubleAccessor(&LogDistanceShadowingPropagationLossModel::m_exponent),
+                          MakeDoubleChecker<double>())
+            .AddAttribute("ReferenceDistance",
+                          "The distance at which the reference loss is calculated (m)",
+                          DoubleValue(1.0),
+                          MakeDoubleAccessor(&LogDistanceShadowingPropagationLossModel::m_referenceDistance),
+                          MakeDoubleChecker<double>())
+            .AddAttribute("ReferenceLoss",
+                          "The reference loss at reference distance (dB). (Default is Friis at 1m "
+                          "with 5.15 GHz)",
+                          DoubleValue(46.6777),
+                          MakeDoubleAccessor(&LogDistanceShadowingPropagationLossModel::m_referenceLoss),
+                          MakeDoubleChecker<double>())
+            .AddAttribute("Variable",
+                "The random Gaussian variable used to pick a loss every time CalcRxPower is invoked.",
+                StringValue("ns3::NormalRandomVariable[Mean=0|Variance=0]"),
+                MakePointerAccessor(&LogDistanceShadowingPropagationLossModel::m_random),
+                MakePointerChecker<RandomVariableStream>());
+            
+    return tid;
+}
+
+LogDistanceShadowingPropagationLossModel::LogDistanceShadowingPropagationLossModel()
+{
+}
+
+void
+LogDistanceShadowingPropagationLossModel::SetPathLossExponent(double n)
+{
+    m_exponent = n;
+}
+
+void
+LogDistanceShadowingPropagationLossModel::SetReference(double referenceDistance, double referenceLoss)
+{
+    m_referenceDistance = referenceDistance;
+    m_referenceLoss = referenceLoss;
+}
+
+double
+LogDistanceShadowingPropagationLossModel::GetPathLossExponent() const
+{
+    return m_exponent;
+}
+
+double
+LogDistanceShadowingPropagationLossModel::DoCalcRxPower(double txPowerDbm,
+                                               Ptr<MobilityModel> a,
+                                               Ptr<MobilityModel> b) const
+{
+    double distance = a->GetDistanceFrom(b);
+    if (distance <= m_referenceDistance)
+    {
+        return txPowerDbm - m_referenceLoss;
+    }
+    /**
+     * The formula is:
+     * rx = 10 * log (Pr0(tx)) - n * 10 * log (d/d0)
+     *
+     * Pr0: rx power at reference distance d0 (W)
+     * d0: reference distance: 1.0 (m)
+     * d: distance (m)
+     * tx: tx power (dB)
+     * rx: dB
+     *
+     * Which, in our case is:
+     *
+     * rx = rx0(tx) - 10 * n * log (d/d0)
+     */
+
+    
+    double pathLossDb = 10 * m_exponent * std::log10(distance / m_referenceDistance) + m_random->GetValue();
+    double rxc = -m_referenceLoss - pathLossDb;
+    NS_LOG_DEBUG("distance=" << distance << "m, reference-attenuation=" << -m_referenceLoss
+                             << "dB, "
+                             << "attenuation coefficient=" << rxc << "db" );
+    return txPowerDbm + rxc;
+}
+
+int64_t
+LogDistanceShadowingPropagationLossModel::DoAssignStreams(int64_t stream)
+{
+    m_random->SetStream(stream);
+    return 1;
+}
+
 // ------------------------------------------------------------------------- //
 
 NS_OBJECT_ENSURE_REGISTERED(ThreeLogDistancePropagationLossModel);
